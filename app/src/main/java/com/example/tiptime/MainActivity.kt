@@ -19,6 +19,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -31,6 +32,7 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
@@ -41,6 +43,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -66,9 +69,13 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun TipTimeLayout() {
     var amountInput by remember { mutableStateOf("") }
+    var tipPercentageInput by remember { mutableStateOf("") }
+    var roundUpTip by remember { mutableStateOf(false) }
 
     val amount = amountInput.toDoubleOrNull() ?: 0.0
-    val tip = calculateTip(amount)
+    val tipPercentage = tipPercentageInput.toDoubleOrNull() ?: 0.0
+
+    val tip = calculateTip(amount, tipPercentage, roundUpTip)
 
     Column(
         modifier = Modifier
@@ -84,7 +91,25 @@ fun TipTimeLayout() {
                 .padding(bottom = 16.dp, top = 40.dp)
                 .align(alignment = Alignment.Start)
         )
-        EditNumberField(value = amountInput, onValueChange = { amountInput = it })
+        EditNumberField(
+            value = amountInput,
+            onValueChange = { amountInput = it },
+            label = R.string.bill_amount,
+            keyboardOptions = KeyboardOptions.Default.copy(
+                keyboardType = KeyboardType.Number,
+                imeAction = ImeAction.Next
+            )
+        )
+        EditNumberField(
+            value = tipPercentageInput,
+            onValueChange = { tipPercentageInput = it },
+            label = R.string.tip_percentage,
+            keyboardOptions = KeyboardOptions.Default.copy(
+                keyboardType = KeyboardType.Number,
+                imeAction = ImeAction.Done
+            )
+        )
+        Switch(checked = roundUpTip, onCheckedChange = { roundUpTip = it })
         Text(
             text = stringResource(R.string.tip_amount, tip),
             style = MaterialTheme.typography.displaySmall
@@ -94,15 +119,22 @@ fun TipTimeLayout() {
 }
 
 @Composable
-fun EditNumberField(value: String, onValueChange: (String) -> Unit, modifier: Modifier = Modifier) {
-
+fun EditNumberField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    @StringRes label: Int,
+    keyboardOptions: KeyboardOptions,
+    modifier: Modifier = Modifier
+) {
     TextField(
         value = value,
         onValueChange = onValueChange,
-        label = { Text(stringResource(R.string.bill_amount)) },
-        modifier = modifier.fillMaxWidth().padding(bottom = 32.dp),
+        label = { Text(stringResource(label)) },
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(bottom = 32.dp),
         singleLine = true,
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+        keyboardOptions = keyboardOptions
     )
 }
 
@@ -111,8 +143,15 @@ fun EditNumberField(value: String, onValueChange: (String) -> Unit, modifier: Mo
  * according to the local currency.
  * Example would be "$10.00".
  */
-private fun calculateTip(amount: Double, tipPercent: Double = 15.0): String {
-    val tip = tipPercent / 100 * amount
+private fun calculateTip(
+    amount: Double,
+    tipPercent: Double = 15.0,
+    roundUpTip: Boolean = false
+): String {
+    var tip = tipPercent / 100 * amount
+    if (roundUpTip) {
+        tip = kotlin.math.ceil(tip)
+    }
     return NumberFormat.getCurrencyInstance().format(tip)
 }
 
