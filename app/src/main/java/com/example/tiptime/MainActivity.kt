@@ -170,7 +170,7 @@ fun RoundUpTipRow(
  * according to the local currency.
  * Example would be "$10.00".
  */
-private fun calculateTip(
+internal fun calculateTip(
     amount: Double,
     tipPercent: Double = 15.0,
     roundUpTip: Boolean = false
